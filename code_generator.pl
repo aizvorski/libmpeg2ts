@@ -40,6 +40,8 @@ $output_fh->print(io('mpeg2ts.h_suffix')->all);
 $output_fh = IO::File->new('mpeg2ts.c', 'w');
 
 $output_fh->print(io('mpeg2ts.c_prefix')->all);
+&process_node($doc, "new_func");
+&process_node($doc, "free_func");
 &process_node($doc, "read_func");
 &process_node($doc, "write_func");
 &process_node($doc, "len_func");
@@ -58,7 +60,9 @@ sub process_node
     {
         $indent = 0;
 
-        if ($gen eq "write_func")   { &output("int ${name}_write(${name}_t* p, bs_t* bs) {\n"); }
+        if ($gen eq "new_func")     { &output("${name}_t* ${name}_new() {\n"); }
+        elsif ($gen eq "free_func") { &output("void ${name}_free(${name}_t* p) {\n"); }
+        elsif ($gen eq "write_func"){ &output("int ${name}_write(${name}_t* p, bs_t* bs) {\n"); }
         elsif ($gen eq "read_func") { &output("int ${name}_read(${name}_t* p, bs_t* bs) {\n"); }
         elsif ($gen eq "len_func") 
         {
@@ -94,12 +98,14 @@ sub process_node
         }
         elsif ($gen eq "defs")
         {
+            &output("${name}_t* ${name}_new();\n");
+            &output("void ${name}_free(${name}_t* p);\n");
             &output("int ${name}_write(${name}_t* p, bs_t* bs);\n");
             &output("int ${name}_read(${name}_t* p, bs_t* bs);\n");
-            &output("int ${name}_len(${name}_t* p);\n");
+            &output("int ${name}_len(${name}_t* p);\n\n");
         }
     }
-    elsif ($node->nodeName() eq 'if' && $gen ne "structs" && $gen ne "defs")
+    elsif ($node->nodeName() eq 'if' && $gen !~ m!(structs|defs|new_func|free_func)!)
     {
         if ($node->hasAttribute("equals"))
         {
@@ -217,8 +223,35 @@ sub process_node
 
     if ($node->nodeName() eq 'structure')
     {
-        if ($gen eq "write_func")   { &output("};\n\n"); }
-        elsif ($gen eq "read_func") { &output("};\n\n"); }
+        if ($gen eq "new_func")     
+        {
+            $indent++;
+            &output("${name}_t* p = (${name}_t*)malloc(sizeof(${name}_t*));\n");
+            &output("return p;\n");
+            $indent--;
+            &output("};\n\n");
+        }
+        elsif ($gen eq "free_func")
+        {
+            $indent++;
+            &output("free(p);\n");
+            $indent--;
+            &output("};\n\n");
+        }
+        elsif ($gen eq "write_func")
+        {
+            $indent++;
+            &output("return 0;\n");
+            $indent--;
+            &output("};\n\n");
+        }
+        elsif ($gen eq "read_func") 
+        {
+            $indent++;
+            &output("return 0;\n");
+            $indent--;
+            &output("};\n\n");
+        }
         elsif ($gen eq "len_func") 
         {
             $indent++;
@@ -228,7 +261,7 @@ sub process_node
         }
         elsif ($gen eq "structs")   { &output("} ${name}_t;\n\n"); }
     }
-    elsif ($node->nodeName() eq 'if' && $gen ne "structs" && $gen ne "defs")
+    elsif ($node->nodeName() eq 'if'  && $gen !~ m!(structs|defs|new_func|free_func)!)
     {
         &output("};\n");
     }

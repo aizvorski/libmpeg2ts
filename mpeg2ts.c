@@ -23,6 +23,33 @@
 #include "mpeg2ts.h"
 #include "bs.h"
 
+adaptation_field_t* adaptation_field_new() {
+    adaptation_field_t* p = (adaptation_field_t*)malloc(sizeof(adaptation_field_t*));
+    return p;
+};
+
+transport_packet_t* transport_packet_new() {
+    transport_packet_t* p = (transport_packet_t*)malloc(sizeof(transport_packet_t*));
+    return p;
+};
+
+PES_packet_t* PES_packet_new() {
+    PES_packet_t* p = (PES_packet_t*)malloc(sizeof(PES_packet_t*));
+    return p;
+};
+
+void adaptation_field_free(adaptation_field_t* p) {
+    free(p);
+};
+
+void transport_packet_free(transport_packet_t* p) {
+    free(p);
+};
+
+void PES_packet_free(PES_packet_t* p) {
+    free(p);
+};
+
 int adaptation_field_read(adaptation_field_t* p, bs_t* bs) {
     p->adaptation_field_length = bs_read_uimsbf(bs, 8);
     if (p->adaptation_field_length > 0) {
@@ -73,6 +100,7 @@ int adaptation_field_read(adaptation_field_t* p, bs_t* bs) {
         };
         bs_skip_bytes_all(bs);
     };
+    return 0;
 };
 
 int transport_packet_read(transport_packet_t* p, bs_t* bs) {
@@ -90,6 +118,7 @@ int transport_packet_read(transport_packet_t* p, bs_t* bs) {
     if (p->adaptation_field_control == 0x01 || p->adaptation_field_control ==  0x03) {
         p->data_len = bs_read_bytes_all(bs, p->data);
     };
+    return 0;
 };
 
 int PES_packet_read(PES_packet_t* p, bs_t* bs) {
@@ -202,6 +231,7 @@ int PES_packet_read(PES_packet_t* p, bs_t* bs) {
     if (p->stream_id != pes_stream_id_program_stream_map && p->stream_id !=                                          pes_stream_id_padding_stream && p->stream_id !=                                          pes_stream_id_private_stream_2 && p->stream_id !=                                          pes_stream_id_ECM && p->stream_id !=                                          pes_stream_id_EMM && p->stream_id !=                                          pes_stream_id_program_stream_directory && p->stream_id !=                                          pes_stream_id_DSMCC_stream && p->stream_id !=                                          pes_stream_id_H_222_1) {
         p->PES_packet_data_len = bs_read_bytes_all(bs, p->PES_packet_data);
     };
+    return 0;
 };
 
 int adaptation_field_write(adaptation_field_t* p, bs_t* bs) {
@@ -254,6 +284,7 @@ int adaptation_field_write(adaptation_field_t* p, bs_t* bs) {
         };
         bs_fill_bytes_all(bs, 0xFF);
     };
+    return 0;
 };
 
 int transport_packet_write(transport_packet_t* p, bs_t* bs) {
@@ -271,6 +302,7 @@ int transport_packet_write(transport_packet_t* p, bs_t* bs) {
     if (p->adaptation_field_control == 0x01 || p->adaptation_field_control ==  0x03) {
         bs_write_bytes(bs, p->data, p->data_len);
     };
+    return 0;
 };
 
 int PES_packet_write(PES_packet_t* p, bs_t* bs) {
@@ -383,6 +415,7 @@ int PES_packet_write(PES_packet_t* p, bs_t* bs) {
     if (p->stream_id != pes_stream_id_program_stream_map && p->stream_id !=                                          pes_stream_id_padding_stream && p->stream_id !=                                          pes_stream_id_private_stream_2 && p->stream_id !=                                          pes_stream_id_ECM && p->stream_id !=                                          pes_stream_id_EMM && p->stream_id !=                                          pes_stream_id_program_stream_directory && p->stream_id !=                                          pes_stream_id_DSMCC_stream && p->stream_id !=                                          pes_stream_id_H_222_1) {
         bs_write_bytes(bs, p->PES_packet_data, p->PES_packet_data_len);
     };
+    return 0;
 };
 
 int adaptation_field_len(adaptation_field_t* p) {

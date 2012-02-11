@@ -136,15 +136,24 @@ typedef struct {
             int PES_packet_data_len;
 } PES_packet_t;
 
+adaptation_field_t* adaptation_field_new();
+void adaptation_field_free(adaptation_field_t* p);
 int adaptation_field_write(adaptation_field_t* p, bs_t* bs);
 int adaptation_field_read(adaptation_field_t* p, bs_t* bs);
 int adaptation_field_len(adaptation_field_t* p);
+
+transport_packet_t* transport_packet_new();
+void transport_packet_free(transport_packet_t* p);
 int transport_packet_write(transport_packet_t* p, bs_t* bs);
 int transport_packet_read(transport_packet_t* p, bs_t* bs);
 int transport_packet_len(transport_packet_t* p);
+
+PES_packet_t* PES_packet_new();
+void PES_packet_free(PES_packet_t* p);
 int PES_packet_write(PES_packet_t* p, bs_t* bs);
 int PES_packet_read(PES_packet_t* p, bs_t* bs);
 int PES_packet_len(PES_packet_t* p);
+
 
 #ifdef __cplusplus
 }

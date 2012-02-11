@@ -21,4 +21,5 @@
 
 
 #include "mpeg2ts.h"
+#include "bs.h"
 

@@ -21,6 +21,7 @@
 
 
 #include "mpeg2ts.h"
+#include "bs.h"
 
 int adaptation_field_read(adaptation_field_t* p, bs_t* bs) {
     p->adaptation_field_length = bs_read_uimsbf(bs, 8);
@@ -83,10 +84,10 @@ int transport_packet_read(transport_packet_t* p, bs_t* bs) {
     p->transport_scrambling_control = bs_read_bslbf(bs, 2);
     p->adaptation_field_control = bs_read_bslbf(bs, 2);
     p->continuity_counter = bs_read_uimsbf(bs, 4);
-    if (p->adaptation_field_control == 0b10 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x2 || p->adaptation_field_control ==  0x3) {
         adaptation_field_read(p->adaptation_field, bs);
     };
-    if (p->adaptation_field_control == 0b01 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x1 || p->adaptation_field_control ==  0x3) {
         p->data_len = bs_read_bytes_all(bs, p->data);
     };
 };
@@ -110,11 +111,11 @@ int PES_packet_read(PES_packet_t* p, bs_t* bs) {
         p->PES_CRC_flag = bs_read_bslbf(bs, 1);
         p->PES_extension_flag = bs_read_bslbf(bs, 1);
         p->PES_header_data_length = bs_read_uimsbf(bs, 8);
-        if (p->PTS_DTS_flags == 0b10) {
+        if (p->PTS_DTS_flags == 0x2) {
             bs_skip_bslbf(bs, 4);
             p->PTS = bs_read_timestamp_with_markers(bs, 36);
         };
-        if (p->PTS_DTS_flags == 0b11) {
+        if (p->PTS_DTS_flags == 0x3) {
             bs_skip_bslbf(bs, 4);
             p->PTS = bs_read_timestamp_with_markers(bs, 36);
             bs_skip_bslbf(bs, 4);
@@ -264,10 +265,10 @@ int transport_packet_write(transport_packet_t* p, bs_t* bs) {
     bs_write_bslbf(bs, p->transport_scrambling_control, 2);
     bs_write_bslbf(bs, p->adaptation_field_control, 2);
     bs_write_uimsbf(bs, p->continuity_counter, 4);
-    if (p->adaptation_field_control == 0b10 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x2 || p->adaptation_field_control ==  0x3) {
         adaptation_field_write(p->adaptation_field, bs);
     };
-    if (p->adaptation_field_control == 0b01 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x1 || p->adaptation_field_control ==  0x3) {
         bs_write_bytes(bs, p->data, p->data_len);
     };
 };
@@ -277,7 +278,7 @@ int PES_packet_write(PES_packet_t* p, bs_t* bs) {
     bs_write_uimsbf(bs, p->stream_id, 8);
     bs_write_uimsbf(bs, p->PES_packet_length, 16);
     if (p->stream_id != pes_stream_id_program_stream_map && p->stream_id !=                                            pes_stream_id_padding_stream && p->stream_id !=                                            pes_stream_id_private_stream_2 && p->stream_id !=                                            pes_stream_id_ECM && p->stream_id !=                                            pes_stream_id_EMM && p->stream_id !=                                            pes_stream_id_program_stream_directory && p->stream_id !=                                            pes_stream_id_DSMCC_stream && p->stream_id !=                                           pes_stream_id_H_222_1) {
-        bs_write_bslbf(bs, 0b10, 2);
+        bs_write_bslbf(bs, 0x2, 2);
         bs_write_bslbf(bs, p->PES_scrambling_control, 2);
         bs_write_bslbf(bs, p->PES_priority, 1);
         bs_write_bslbf(bs, p->data_alignment_indicator, 1);
@@ -291,14 +292,14 @@ int PES_packet_write(PES_packet_t* p, bs_t* bs) {
         bs_write_bslbf(bs, p->PES_CRC_flag, 1);
         bs_write_bslbf(bs, p->PES_extension_flag, 1);
         bs_write_uimsbf(bs, p->PES_header_data_length, 8);
-        if (p->PTS_DTS_flags == 0b10) {
-            bs_write_bslbf(bs, 0b0010, 4);
+        if (p->PTS_DTS_flags == 0x2) {
+            bs_write_bslbf(bs, 0x2, 4);
             bs_write_timestamp_with_markers(bs, p->PTS, 36);
         };
-        if (p->PTS_DTS_flags == 0b11) {
-            bs_write_bslbf(bs, 0b0011, 4);
+        if (p->PTS_DTS_flags == 0x3) {
+            bs_write_bslbf(bs, 0x3, 4);
             bs_write_timestamp_with_markers(bs, p->PTS, 36);
-            bs_write_bslbf(bs, 0b0001, 4);
+            bs_write_bslbf(bs, 0x1, 4);
             bs_write_timestamp_with_markers(bs, p->DTS, 36);
         };
         if (p->ESCR_flag == 1) {
@@ -367,7 +368,7 @@ int PES_packet_write(PES_packet_t* p, bs_t* bs) {
                 bs_write_uimsbf(bs, p->original_stuff_length, 6);
             };
             if (p->P_STD_buffer_flag == 1) {
-                bs_write_bslbf(bs, 0b10, 2);
+                bs_write_bslbf(bs, 0x2, 2);
                 bs_write_bslbf(bs, p->P_STD_buffer_scale, 1);
                 bs_write_uimsbf(bs, p->P_STD_buffer_size, 13);
             };
@@ -457,10 +458,10 @@ int transport_packet_len(transport_packet_t* p) {
     len += 2;
     len += 2;
     len += 4;
-    if (p->adaptation_field_control == 0b10 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x2 || p->adaptation_field_control ==  0x3) {
         len += adaptation_field_len(p->adaptation_field);
     };
-    if (p->adaptation_field_control == 0b01 || p->adaptation_field_control ==  0b11) {
+    if (p->adaptation_field_control == 0x1 || p->adaptation_field_control ==  0x3) {
         len += p->data_len *8;
     };
     return len /8;
@@ -484,11 +485,11 @@ int PES_packet_len(PES_packet_t* p) {
         len += 1;
         len += 1;
         len += 8;
-        if (p->PTS_DTS_flags == 0b10) {
+        if (p->PTS_DTS_flags == 0x2) {
             len += 4;
             len += 36;
         };
-        if (p->PTS_DTS_flags == 0b11) {
+        if (p->PTS_DTS_flags == 0x3) {
             len += 4;
             len += 36;
             len += 4;

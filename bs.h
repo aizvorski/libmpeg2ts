@@ -84,6 +84,12 @@ static uint32_t bs_next_bits( bs_t* bs, int nbits );
 #define bs_write_bslbf   bs_write_u
 #define bs_write_tcimsbf bs_write_u
 #define bs_write_uimsbf  bs_write_u
+
+//FIXME
+#define bs_read_bytes_all(b, buf) bs_read_bytes(b, buf, bs_bytes_left(b))
+#define bs_skip_bytes_all(b) b->p = b->end
+
+
 // IMPLEMENTATION
 
 static inline bs_t* bs_init(bs_t* b, uint8_t* buf, size_t size)

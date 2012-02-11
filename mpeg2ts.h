@@ -119,7 +119,6 @@ typedef struct {
             int pack_header_field_flag;
             int program_packet_sequence_counter_flag;
             int P_STD_buffer_flag;
-            int reserved;
             int PES_extension_flag_2;
                 int PES_private_data;
                 int pack_field_length;

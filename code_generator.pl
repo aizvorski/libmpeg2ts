@@ -26,7 +26,7 @@ use IO::All;
 my $parser = XML::LibXML->new();
 my $xml    = io('mpeg2ts.xml')->all;
 # convert binary strings to hex
-$xml =~ s!\b0b([01]*)\b! sprintf("0x%x", unpack("N", pack("B32", substr("0" x 32 . $1, -32)))) !ge;
+$xml =~ s!\b0b([01]*)\b! sprintf("0x%02x", unpack("N", pack("B32", substr("0" x 32 . $1, -32)))) !ge;
 my $doc    = $parser->parse_string($xml);
 
 $indent = 0;

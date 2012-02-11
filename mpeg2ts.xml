@@ -202,7 +202,7 @@
       <field name="pack_header_field_flag" length="1" type="bslbf"/>
       <field name="program_packet_sequence_counter_flag" length="1" type="bslbf"/>
       <field name="P_STD_buffer_flag" length="1" type="bslbf"/>
-      <field name="reserved" length="3" type="bslbf"/>
+      <field name="reserved" length="3" type="bslbf" value="0"/>
       <field name="PES_extension_flag_2" length="1" type="bslbf"/>
       <if field="PES_private_data_flag" equals="1">
         <field name="PES_private_data" length="128" type="bslbf"/>

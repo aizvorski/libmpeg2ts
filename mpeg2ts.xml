@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+# libmpeg2ts, a MPEG2 transport stream reading/writing library
+# 
+# Copyright (C) 2012 Alexander Izvorski <aizvorski@gmail.com>
+# 
+# This file is part of libmpeg2ts.
+# 
+# libmpeg2ts is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# libmpeg2ts is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with libmpeg2ts.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+
+<standard name="mpeg2ts">
+
+<structure name="adaptation_field">
+  <field name="adaptation_field_length" length="8" type="uimsbf" contains="byte_length"/>
+  <length field="adaptation_field_length"/>
+  <if field="adaptation_field_length" greater_than="0">
+    <field name="discontinuity_indicator" length="1" type="bslbf"/>
+    <field name="random_access_indicator" length="1" type="bslbf"/>
+    <field name="elementary_stream_priority_indicator" length="1" type="bslbf"/>
+    <field name="PCR_flag" length="1" type="bslbf"/>
+    <field name="OPCR_flag" length="1" type="bslbf"/>
+    <field name="splicing_point_flag" length="1" type="bslbf"/>
+    <field name="transport_private_data_flag" length="1" type="bslbf"/>
+    <field name="adaptation_field_extension_flag" length="1" type="bslbf"/>
+    <if field="PCR_flag" equals="1">
+      <field name="program_clock_reference_base" length="33" type="uimsbf"/>
+      <field name="reserved" length="6" type="bslbf" value="0"/>
+      <field name="program_clock_reference_extension" length="9" type="uimsbf"/>
+    </if>
+    <if field="OPCR_flag" equals="1">
+      <field name="original_program_clock_reference_base" length="33" type="uimsbf"/>
+      <field name="reserved" length="6" type="bslbf" value="0"/>
+      <field name="original_program_clock_reference_extension" length="9" type="uimsbf"/>
+    </if>
+    <if field="splicing_point_flag" equals="1">
+      <field name="splice_countdown" length="8" type="tcimsbf"/>
+    </if>
+    <if field="transport_private_data_flag" equals="1">
+      <field name="transport_private_data_length" length="8" type="uimsbf"/>
+      <field name="private_data" byte_length="transport_private_data_length" type="bytes"/>
+    </if>
+    <if field="adaptation_field_extension_flag" equals="1">
+      <field name="adaptation_field_extension_length" length="8" type="uimsbf"/>
+      <length field="adaptation_field_extension_length"/>
+      <field name="ltw_flag" length="1" type="bslbf"/>
+      <field name="piecewise_rate_flag" length="1" type="bslbf"/>
+      <field name="seamless_splice_flag" length="1" type="bslbf"/>
+      <field name="reserved" length="5" type="bslbf" value="0"/>
+      <if field="ltw_flag" equals="1">
+        <field name="ltw_valid_flag" length="1" type="bslbf"/>
+        <field name="ltw_offset" length="15" type="uimsbf"/>
+      </if>
+      <if field="piecewise_rate_flag" equals="1">
+        <field name="reserved" length="2" type="bslbf" value="0"/>
+        <field name="piecewise_rate" length="22" type="uimsbf"/>
+      </if>
+      <if field="seamless_splice_flag" equals="1">
+        <field name="splice_type" length="4" type="bslbf"/>
+        <field name="DTS_next_AU" length="36" type="timestamp_with_markers"/>
+      </if>
+      <field name="reserved" byte_length="all" type="bytes" value="0"/>
+    </if>
+    <field name="stuffing" byte_length="all" type="bytes" value="0xFF"/>
+  </if>
+</structure>
+
+<structure name="transport_packet">
+  <field name="sync_byte"                    length="8"  type="bslbf" value="0x47"/>
+  <field name="transport_error_indicator"    length="1"  type="bslbf"/>
+  <field name="payload_unit_start_indicator" length="1"  type="bslbf"/>
+  <field name="transport_priority"           length="1"  type="bslbf"/>
+  <field name="PID"                          length="13" type="uimsbf"/>
+  <field name="transport_scrambling_control" length="2"  type="bslbf"/>
+  <field name="adaptation_field_control"     length="2"  type="bslbf"/>
+  <field name="continuity_counter"           length="4"  type="uimsbf"/>
+  <if field="adaptation_field_control" equals_any="0b10, 0b11">
+    <field name="adaptation_field" type="structure" structure_type="adaptation_field"/>
+  </if>
+  <if field="adaptation_field_control" equals_any="0b01, 0b11">
+    <field name="data" byte_length="all" type="bytes"/>
+  </if>
+</structure>
+
+<constant name="pes_stream_id_program_stream_map" value="0"/>
+<constant name="pes_stream_id_padding_stream" value="0"/>
+<constant name="pes_stream_id_private_stream_2" value="0"/>
+<constant name="pes_stream_id_ECM" value="0"/>
+<constant name="pes_stream_id_EMM" value="0"/>
+<constant name="pes_stream_id_program_stream_directory" value="0"/>
+<constant name="pes_stream_id_DSMCC_stream" value="0"/>
+<constant name="pes_stream_id_H_222_1" value="0"/>
+
+
+<constant name="trick_mode_control_fast_forward" value="0"/>
+<constant name="trick_mode_control_slow_motion" value="0"/>
+<constant name="trick_mode_control_freeze_frame" value="0"/>
+<constant name="trick_mode_control_fast_reverse" value="0"/>
+<constant name="trick_mode_control_slow_reverse" value="0"/>
+
+<structure name="PES_packet">
+  <field name="packet_start_code_prefix" length="24" type="bslbf"/>
+  <field name="stream_id" length="8" type="uimsbf"/>
+  <field name="PES_packet_length" length="16" type="uimsbf"/>
+  <length field="PES_packet_length"/>
+  <if field="stream_id" not_equals_any="pes_stream_id_program_stream_map,  
+                                        pes_stream_id_padding_stream,  
+                                        pes_stream_id_private_stream_2,  
+                                        pes_stream_id_ECM,  
+                                        pes_stream_id_EMM,  
+                                        pes_stream_id_program_stream_directory,  
+                                        pes_stream_id_DSMCC_stream, 
+                                        pes_stream_id_H_222_1">
+    <field name="const" length="2" type="bslbf" value="0b10" />
+    <field name="PES_scrambling_control" length="2" type="bslbf"/>
+    <field name="PES_priority" length="1" type="bslbf"/>
+    <field name="data_alignment_indicator" length="1" type="bslbf"/>
+    <field name="copyright" length="1" type="bslbf"/>
+    <field name="original_or_copy" length="1" type="bslbf"/>
+    <field name="PTS_DTS_flags" length="2" type="bslbf"/>
+    <field name="ESCR_flag" length="1" type="bslbf"/>
+    <field name="ES_rate_flag" length="1" type="bslbf"/>
+    <field name="DSM_trick_mode_flag" length="1" type="bslbf"/>
+    <field name="additional_copy_info_flag" length="1" type="bslbf"/>
+    <field name="PES_CRC_flag" length="1" type="bslbf"/>
+    <field name="PES_extension_flag" length="1" type="bslbf"/>
+    <field name="PES_header_data_length" length="8" type="uimsbf"/>
+    <if field="PTS_DTS_flags" equals="0b10">
+      <field name="const" length="4" type="bslbf" value="0b0010" />
+      <field name="PTS" length="36" type="timestamp_with_markers"/>
+    </if>
+    <if field="PTS_DTS_flags" equals="0b11">
+      <field name="const" length="4" type="bslbf" value="0b0011" />
+      <field name="PTS" length="36" type="timestamp_with_markers"/>
+      <field name="const" length="4" type="bslbf" value="0b0001"/>
+      <field name="DTS" length="36" type="timestamp_with_markers"/>
+    </if>
+    <if field="ESCR_flag" equals="1">
+      <field name="reserved" length="2" type="bslbf" value="0"/>
+      <field name="ESCR_base" length="36" type="timestamp_with_markers"/>
+      <field name="ESCR_extension" length="9" type="uimsbf"/>
+      <field name="marker_bit" length="1" type="bslbf" value="1"/>
+    </if>
+    <if field="ES_rate_flag" equals="1">
+      <field name="marker_bit" length="1" type="bslbf" value="1"/>
+      <field name="ES_rate" length="22" type="uimsbf"/>
+      <field name="marker_bit" length="1" type="bslbf" value="1"/>
+    </if>
+    <if field="DSM_trick_mode_flag" equals="1">
+      <field name="trick_mode_control" length="3" type="uimsbf"/>
+      <if field="trick_mode_control" equals="trick_mode_control_fast_forward">
+        <field name="field_id" length="2" type="bslbf"/>
+        <field name="intra_slice_refresh" length="1" type="bslbf"/>
+        <field name="frequency_truncation" length="2" type="bslbf"/>
+      </if>
+      <if field="trick_mode_control" equals="trick_mode_control_slow_motion">
+        <field name="rep_cntrl" length="5" type="uimsbf"/>
+      </if>
+      <if field="trick_mode_control" equals="trick_mode_control_freeze_frame">
+        <field name="field_id" length="2" type="uimsbf"/>
+        <field name="reserved" length="3" type="bslbf" value="0"/>
+      </if>
+      <if field="trick_mode_control" equals="trick_mode_control_fast_reverse">
+        <field name="field_id" length="2" type="bslbf"/>
+        <field name="intra_slice_refresh" length="1" type="bslbf"/>
+        <field name="frequency_truncation" length="2" type="bslbf"/>
+      </if>
+      <if field="trick_mode_control" equals="trick_mode_control_slow_reverse">
+        <field name="rep_cntrl" length="5" type="uimsbf"/>
+      </if>
+      <if field="trick_mode_control" not_equals_any="trick_mode_control_fast_forward, 
+                                                     trick_mode_control_slow_motion,
+                                                     trick_mode_control_freeze_frame,
+                                                     trick_mode_control_fast_reverse,
+                                                     trick_mode_control_slow_reverse">
+        <field name="reserved" length="5" type="bslbf" value="0"/>
+      </if>
+    </if>
+    <if field="additional_copy_info_flag" equals="1">
+      <field name="marker_bit" length="1" type="bslbf" value="1"/>
+      <field name="additional_copy_info" length="7" type="bslbf"/>
+    </if>
+    <if field="PES_CRC_flag" equals="1">
+      <field name="previous_PES_packet_CRC" length="16" type="bslbf"/>
+    </if>
+    <if field="PES_extension_flag" equals="1">
+      <field name="PES_private_data_flag" length="1" type="bslbf"/>
+      <field name="pack_header_field_flag" length="1" type="bslbf"/>
+      <field name="program_packet_sequence_counter_flag" length="1" type="bslbf"/>
+      <field name="P_STD_buffer_flag" length="1" type="bslbf"/>
+      <field name="reserved" length="3" type="bslbf"/>
+      <field name="PES_extension_flag_2" length="1" type="bslbf"/>
+      <if field="PES_private_data_flag" equals="1">
+        <field name="PES_private_data" length="128" type="bslbf"/>
+      </if>
+      <if field="pack_header_field_flag" equals="1">
+        <field name="pack_field_length" length="8" type="uimsbf"/>
+        <!-- FIXME pack_header() -->
+        <field name="pack_header" byte_length="pack_field_length" type="bytes"/>
+      </if>
+      <if field="program_packet_sequence_counter_flag" equals="1">
+        <field name="marker_bit" length="1" type="bslbf" value="1"/>
+        <field name="program_packet_sequence_counter" length="7" type="uimsbf"/>
+        <field name="marker_bit" length="1" type="bslbf" value="1"/>
+        <field name="MPEG1_MPEG2_identifier" length="1" type="bslbf"/>
+        <field name="original_stuff_length" length="6" type="uimsbf"/>
+      </if>
+      <if field="P_STD_buffer_flag" equals="1">
+        <field name="const" length="2" type="bslbf" value="0b10"/>
+        <field name="P_STD_buffer_scale" length="1" type="bslbf"/>
+        <field name="P_STD_buffer_size" length="13" type="uimsbf"/>
+      </if>
+      <if field="PES_extension_flag_2" equals="1">
+        <field name="marker_bit" length="1" type="bslbf" value="1"/>
+        <field name="PES_extension_field_length" length="7" type="uimsbf"/>
+        <field name="PES_extension_field" byte_length="PES_extension_field_length" type="bytes"/>
+      </if>
+      <!-- FIXME stuffing -->
+      <field name="PES_packet_data" type="bytes" byte_length="all"/>
+    </if>
+  </if>
+  <if field="stream_id" not_equals_any="pes_stream_id_program_stream_map,
+                                        pes_stream_id_padding_stream,
+                                        pes_stream_id_private_stream_2,
+                                        pes_stream_id_ECM,
+                                        pes_stream_id_EMM,
+                                        pes_stream_id_program_stream_directory,
+                                        pes_stream_id_DSMCC_stream,
+                                        pes_stream_id_H_222_1">
+      <field name="PES_packet_data" type="bytes" byte_length="all"/>
+  </if>
+</structure>
+
+</standard>
